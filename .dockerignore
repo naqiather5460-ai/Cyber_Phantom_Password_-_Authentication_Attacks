@@ -1,0 +1,11 @@
+.git
+__pycache__/
+*.pyc
+var/
+data/rba_curated_sample.csv
+data/*.csv
+data/rba_docs/
+tests/
+*.docx
+*.pdf
+.env

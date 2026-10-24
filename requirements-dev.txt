@@ -1,0 +1,7 @@
+-r requirements.txt
+httpx>=0.27          # FastAPI TestClient
+# Only needed for the optional SOC dashboard / notebooks:
+# streamlit>=1.30
+# matplotlib>=3.8
+# seaborn>=0.13
+# shap>=0.45

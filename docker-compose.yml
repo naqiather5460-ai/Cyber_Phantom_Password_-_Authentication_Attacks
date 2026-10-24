@@ -1,0 +1,20 @@
+services:
+  authguard-backend:
+    build: .
+    container_name: authguard-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file: .env            # secrets come from .env (see .env.example); nothing is hard-coded here
+    environment:
+      AUTHGUARD_DB_PATH: /app/var/authguard.db
+    volumes:
+      - authguard-var:/app/var
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  authguard-var:
