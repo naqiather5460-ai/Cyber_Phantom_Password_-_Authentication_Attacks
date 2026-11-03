@@ -8,6 +8,44 @@ authentication attacks (credential stuffing, brute force, AI-assisted guessing, 
 Inspired by Risk-Based Authentication (Freeman et al.; Wiefling et al.) and motivated by the 23andMe
 credential-stuffing incident.
 
+## Team and Work Done
+
+AuthGuard AI (v1.1) was built by a team of three, each owning one layer of the system. Task 6, Part A, AI Engineering Internship.
+
+### Naqi: Backend and Security
+- Built the core service in `src/core/`: config, SQLite database, middleware, PBKDF2 password hashing (200,000 iterations), JWT access tokens with single-use refresh rotation, TOTP step-up (RFC 6238) and proof-of-work puzzles.
+- Wrote the auth and telemetry API routes in `src/api/`, including per-IP rate limiting and the API-key-protected `/telemetry/*` endpoints.
+- Packaged the service with Docker, docker-compose and `.env.example`. In production mode the service refuses to start without a secret key and API key.
+- Wrote the end-to-end backend tests (`test_backend_e2e.py`).
+
+### Mayam: ML Risk Models
+- Trained the **Network Threat Engine** on CICIDS-2017 Tuesday traffic (FTP-Patator and SSH-Patator brute force vs benign).
+- Trained the **Behavioural RBA Engine** on the Das-Group RBA curated sample. It scores how familiar a login's IP, ASN, country, device and browser are against the user's own history, using HistGradientBoosting with Platt calibration.
+- Wrote the data preparation (`src/utils/prepare_datasets.py`) and the retraining script (`train_all.py`).
+- Evaluated both models on a held-out 20 % split:
+
+| Model | ROC-AUC | PR-AUC |
+| --- | --- | --- |
+| Network Threat Engine | 0.99999866 | 0.99998 |
+| Behavioural RBA Engine | 0.9321 | 0.7648 |
+
+### Umair: Decision Agent and Deception
+- Wrote the decision agent (`src/agent/authguard_agent.py`). It fuses both model scores, applies a zero-trust floor (no frictionless ALLOW without a known location and at least two known device signals) and picks one of five actions: ALLOW, STEP_UP, TARPIT, BLOCK or DECEPTIVE_QUARANTINE.
+- Built the honeyword engine (`deceptive_engine.py`): keyed decoy passwords at least 3 edits from the real one, so ordinary typos do not set off the alarm. A decoy hit sends the attacker to a decoy session and raises an alert.
+- Wrote the attack scenarios and demo tooling (`try_login.py`, `seed_dummy_data.py`) and the agent tests (`test_agent.py`).
+
+### Shared work
+- Research, literature review, problem statement and the project proposal, with each member writing the sections for their own layer.
+- 27 automated tests, all passing in about 10 seconds.
+- A review of our own results and the limits we found.
+
+### Known limits
+- The RBA ROC-AUC target of 0.985 was not met (0.9321).
+- The Network Threat Engine score is probably inflated. Its features include Destination Port, and the brute-force traffic targets ports 21 and 22. We have not yet tested it on other days of CICIDS-2017.
+- The RBA split is random rather than chronological, so the result is likely optimistic.
+- There is no per-account throttle yet, so a slow, distributed password spray is not stopped.
+- SQLite and the in-process rate limiter suit a single node only.
+
 ## Architecture
 
 ```
